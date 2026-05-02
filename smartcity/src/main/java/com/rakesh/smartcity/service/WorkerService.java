@@ -26,7 +26,7 @@ public class WorkerService {
                 .orElseThrow(() -> new RuntimeException("Admin not found"));
 
         if (adminUser.getRole() != Role.ADMIN) {
-            throw new RuntimeException("User is not ADMIN");
+            throw new RuntimeException("This User is not An ADMIN");
         }
 
         workerUser.setAdmin(adminUser);
@@ -37,7 +37,7 @@ public class WorkerService {
             throw new RuntimeException("Email already present");
         }
 
-        String phoneNumber = workerCreateRequestDto.getPhoneNumber();
+        String phoneNumber = workerCreateRequestDto.getPhoneNumber();     // for avoid dupilactte worker phone no
         Optional<User> existingPhoneNumber = userRepo.findByPhoneNumber(phoneNumber);
         if (existingPhoneNumber.isPresent()) {
             throw new RuntimeException("Phone number already present");

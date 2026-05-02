@@ -91,11 +91,9 @@ public List<ComplainResponseDto>getComplainByAdminId(Long AdminId){
                   .orElseThrow(() -> new RuntimeException("User Not found "));
 
         if (complain.getStatus() == ComplainStatus.ASSIGNED) {
-            throw new RuntimeException("Worker already Already Assigned");
+            throw new RuntimeException("Worker Already Assigned");
         }
-        if(complain.getAssignedWorker()!=null){
-            throw new RuntimeException("worker Already assign");
-        }
+
           if(user.getRole()==Role.WORKER){
 
               complain.setAssignedWorker(user);

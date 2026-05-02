@@ -9,5 +9,5 @@ import java.util.List;
 
 @Repository
 public interface ComplainImageRepo extends JpaRepository<ComplainImage, Long> {
-    List<ComplainImage> finadByComplainId(Long Complainid);
+    List<ComplainImage> findByComplainId(Long Complainid);
 }
