@@ -3,9 +3,10 @@ package com.rakesh.smartcity.service;
 
 import com.rakesh.smartcity.Dto.ComplainHistoryDto;
 import com.rakesh.smartcity.Dto.ComplainHistoryRequestDto;
+import com.rakesh.smartcity.Exception.ResourceNotFoundException;
 import com.rakesh.smartcity.model.Complain;
 import com.rakesh.smartcity.model.ComplainStatus;
-import com.rakesh.smartcity.model.Complainhistory;
+import com.rakesh.smartcity.model.ComplainHistory;
 import com.rakesh.smartcity.model.User;
 import com.rakesh.smartcity.repo.ComplainHistoryRepo;
 import com.rakesh.smartcity.repo.ComplainRepo;
@@ -31,13 +32,13 @@ public class ComplainHistoryService {
 
     public ComplainHistoryDto createHistory(Complain complain , String note , User user, ComplainStatus complainStatus){
 
-        Complainhistory history = new Complainhistory();
+        ComplainHistory history = new ComplainHistory();
         history.setComplaint(complain);
         history.setComplainStatus(complainStatus);
         history.setNote(note);
         history.setChangedBy(user);
         history.setChangedAt(LocalDateTime.now());
-        Complainhistory saveComplainHistory = complainHistoryRepo.save(history);
+        ComplainHistory saveComplainHistory = complainHistoryRepo.save(history);
         return mapToDto(saveComplainHistory);
     }
 
@@ -45,15 +46,15 @@ public class ComplainHistoryService {
 
     public ComplainHistoryDto createComplainHistory(ComplainHistoryRequestDto dto) {
 
-        // 1. Fetch Complain using ID
+
         Complain complain = complainRepo.findById(dto.getComplainId())
-                .orElseThrow(() -> new RuntimeException("Complain not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Complain not found"));
 
-        // 2. Fetch User using ID
+
         User user = userRepo.findById(dto.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        // 3. Call my existing method
+
         return createHistory(
                 complain,
                 dto.getNote(),
@@ -62,16 +63,17 @@ public class ComplainHistoryService {
         );
     }
 
- public List<ComplainHistoryDto> getComplainHistoryByComplainId(Long complainId) {
-     List<Complainhistory> complainHistory = complainHistoryRepo.findByComplainId(complainId);
-     if (complainHistory.isEmpty()) {
-         throw new RuntimeException("No history found for this complaint id: " + complainId);
-     }
-     return complainHistory.stream()
-             .map(this::mapToDto)
-             .collect( Collectors.toList());
- }
-private ComplainHistoryDto mapToDto(Complainhistory complainhistory){
+
+    public List<ComplainHistoryDto> getComplainHistoryByComplainId(Long complainId) {
+        List<ComplainHistory> complainHistory = complainHistoryRepo.findByComplaintId(complainId);
+
+        return complainHistory.stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
+
+
+private ComplainHistoryDto mapToDto(ComplainHistory complainhistory){
 
         ComplainHistoryDto complainHistoryDto = new ComplainHistoryDto();
 

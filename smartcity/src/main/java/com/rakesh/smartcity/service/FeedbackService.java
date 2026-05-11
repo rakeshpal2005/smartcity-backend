@@ -2,17 +2,20 @@ package com.rakesh.smartcity.service;
 
 import com.rakesh.smartcity.Dto.FeedbackRequestDto;
 import com.rakesh.smartcity.Dto.FeedbackResponseDto;
+import com.rakesh.smartcity.Exception.BadRequestException;
+import com.rakesh.smartcity.Exception.ResourceNotFoundException;
 import com.rakesh.smartcity.model.Complain;
 import com.rakesh.smartcity.model.ComplainStatus;
 import com.rakesh.smartcity.model.Feedback;
 import com.rakesh.smartcity.repo.ComplainRepo;
 import com.rakesh.smartcity.repo.FeedbackRepo;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
-
+@Service
 public class FeedbackService {
 
     @Autowired
@@ -26,22 +29,21 @@ public class FeedbackService {
         Long complainId = feedbackRequestDto.getComplaintId();
 
         Complain complain = complainRepo.findById(complainId)
-                .orElseThrow(() -> new RuntimeException("Complain not found with this id: " + complainId));
+                .orElseThrow(() -> new ResourceNotFoundException("Complaint not found with id: " + complainId));
 
         if (complain.getStatus() != ComplainStatus.RESOLVED) {
-            throw new RuntimeException("Feedback can be given only after complaint is resolved");
+            throw new BadRequestException("Feedback allowed only after complaint is resolved");
         }
 
-        if (feedbackRepo.findByComplaintId(complainId).isPresent()) {
-            throw new RuntimeException("Feedback already exists for this complaint");
+        if (feedbackRepo.findByComplainId(complainId).isPresent()) {
+            throw new BadRequestException("Feedback already exists for this complaint");
         }
 
         if (complain.getAssignedWorker() == null) {
-            throw new RuntimeException("No worker assigned to this complaint");
-        }
+            throw new BadRequestException("No worker assigned to this complaint");        }
 
         Feedback feedback = mapToEntity(feedbackRequestDto);
-        feedback.setComplains(complain);
+        feedback.setComplain(complain);
         feedback.setGivenBy(complain.getUser());
         feedback.setGivenTo(complain.getAssignedWorker());
         feedback.setCreatedAt(LocalDateTime.now());
@@ -51,19 +53,17 @@ public class FeedbackService {
     }
 
     public FeedbackResponseDto getFeedBackByComplainId(Long complainId) {
-        Feedback feedback = feedbackRepo.findByComplaintId(complainId)
-                .orElseThrow(() -> new RuntimeException("Feedback not found with complaint id: " + complainId));
-
+        Feedback feedback = feedbackRepo.findByComplainId(complainId)
+                .orElseThrow(() -> new ResourceNotFoundException("Feedback not found for complaint id: " + complainId));
         return mapToDto(feedback);
     }
 
     public List<FeedbackResponseDto> getFeedbackByWorkerId(Long workerId) {
 
-        List<Feedback> feedbackList = feedbackRepo.findByWorkerId(workerId);
+        List<Feedback> feedbackList = feedbackRepo.findByGivenToId(workerId);
 
         if (feedbackList.isEmpty()) {
-            throw new RuntimeException("Feedback not found for this worker id: " + workerId);
-        }
+            throw new ResourceNotFoundException("Feedback not found for worker id: " + workerId);        }
 
         return feedbackList.stream()
                 .map(this::mapToDto)

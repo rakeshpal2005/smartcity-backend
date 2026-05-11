@@ -10,7 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
+@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 @RequestMapping("/api/workers")
 public class WorkerController {
@@ -20,8 +20,14 @@ public class WorkerController {
 
 
     @PostMapping("/create")
-    public ResponseEntity<UserDto> createWorker(@RequestBody WorkerCreateRequestDto workerRequestDto){
-            return new ResponseEntity<>(workerService.createWorker(workerRequestDto), HttpStatus.CREATED);
+    public ResponseEntity<?> createWorker(@RequestBody WorkerCreateRequestDto dto) {
+        try {
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(workerService.createWorker(dto));
+        } catch (Exception e) {
+            e.printStackTrace(); // VERY IMPORTANT
+            throw e;
+        }
     }
 
 
@@ -30,19 +36,19 @@ public class WorkerController {
         return ResponseEntity.ok(workerService.getAllWorker());
     }
 
-    // GET  /api/workers/{id}
+
     @GetMapping("/{id}")
     public ResponseEntity<UserDto> getWorkerById(@PathVariable Long id) {
         return ResponseEntity.ok(workerService.getWorkerById(id));
     }
 
-    // GET  /api/workers/pincode?pinCode=700001
+
     @GetMapping("/pincode")
     public ResponseEntity<List<UserDto>> getWorkersByPincode(@RequestParam String pinCode) {
         return ResponseEntity.ok(workerService.getWorkerByPinCode(pinCode));
     }
 
-    // GET  /api/workers/admin?adminId=1
+
     @GetMapping("/admin")
     public ResponseEntity<List<UserDto>> getWorkersByAdminId(@RequestParam Long adminId) {
         return ResponseEntity.ok(workerService.getWorkerByadminId(adminId));

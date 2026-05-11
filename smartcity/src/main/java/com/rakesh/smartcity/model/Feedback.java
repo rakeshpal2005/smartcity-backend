@@ -21,14 +21,18 @@ public class Feedback {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+
+    @Column(nullable = false)
     private int rating ;
+
+
     private String comment ;
 
     private LocalDateTime createdAt;
 
     @OneToOne
-    @JoinColumn(name = "complian_id", nullable = false)
-    private Complain complains;
+    @JoinColumn(name = "complain_id", nullable = false)
+    private Complain complain;
 
     @ManyToOne
     @JoinColumn(name = "given_by_user_id", nullable = false)

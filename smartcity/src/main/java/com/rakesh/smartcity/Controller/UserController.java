@@ -9,7 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
+@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
@@ -17,19 +17,19 @@ public class UserController {
     @Autowired
     UserService userService;
 
-    // GET  /api/users
+
     @GetMapping
     public ResponseEntity<List<UserDto>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUser());
     }
 
-    // GET  /api/users/{id}
+
     @GetMapping("/{id}")
     public ResponseEntity<UserDto> getUserById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.getUserById(id));
     }
 
-    // GET  /api/users/role?role=ADMIN
+
     @GetMapping("/role")
     public ResponseEntity<List<UserDto>> getUsersByRole(@RequestParam Role role) {
         return ResponseEntity.ok(userService.getUsersByRole(role));

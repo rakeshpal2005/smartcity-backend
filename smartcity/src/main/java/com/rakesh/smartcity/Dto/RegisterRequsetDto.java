@@ -13,4 +13,5 @@ public class RegisterRequsetDto {
     private String password;
     private String phoneNumber;
     private String pinCode;
+    private String otp;
 }

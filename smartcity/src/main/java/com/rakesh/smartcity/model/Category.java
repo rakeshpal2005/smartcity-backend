@@ -4,5 +4,9 @@ public enum Category {
     ROAD,
     GARBAGE,
     STREET_LIGHT,
-    WATER
+    WATER,
+    DRAINAGE,
+    POWER_SUPPLY,
+    SEWAGE
+
 }

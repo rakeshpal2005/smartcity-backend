@@ -12,5 +12,5 @@ public interface ComplainRepo extends JpaRepository<Complain,Long> {
     List<Complain> findByUserId(Long userId);
     List<Complain> findByAssignedWorkerId(Long workerId);
     List<Complain> findByAssignedAdminId(Long adminId);
-    List<Complain> findByPinCodeAreaId(Long pinCodeAreaId);
+    List<Complain>findByPinCode(String pinCode);
 }

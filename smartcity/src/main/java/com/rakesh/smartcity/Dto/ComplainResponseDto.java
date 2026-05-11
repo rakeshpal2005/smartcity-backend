@@ -15,17 +15,34 @@ import java.util.List;
 @AllArgsConstructor
 public class ComplainResponseDto {
     private Long id;
+
     private String title;
+
     private String description;
+
+    private String pinCode;
+
+    private String areaName;
+
+    private String landMark;
+
     private Category category;
+
     private ComplainStatus status;
+
     private String exactAddress;
+
     private LocalDateTime createdAt;
+
     private LocalDateTime updatedAt;
+
     private LocalDateTime resolvedAt;
+
     private UserDto user;
+
     private UserDto assignedAdmin;
+
     private UserDto assignedWorker;
-    private PincodeAreaDto pinCodeArea;
+
     private List<ComplainImageResponseDto> complaintImages;
 }

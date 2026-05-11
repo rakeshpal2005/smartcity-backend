@@ -4,7 +4,6 @@ package com.rakesh.smartcity.Controller;
 import com.rakesh.smartcity.Dto.ComplainRequestDto;
 import com.rakesh.smartcity.Dto.ComplainResponseDto;
 import com.rakesh.smartcity.Dto.ComplainStatusUpdateDto;
-import com.rakesh.smartcity.model.ComplainStatus;
 import com.rakesh.smartcity.service.ComplainService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -12,7 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
+@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 @RequestMapping("/api/complains")
 public class ComplainController {
@@ -21,8 +20,14 @@ public class ComplainController {
     ComplainService complainService;
 
 
+
+    @GetMapping("/all")
+    public ResponseEntity<List<ComplainResponseDto>> getAllComplains() {
+        return ResponseEntity.ok(complainService.getAllComplains());
+    }
+
     @PostMapping("/create")
-    public ResponseEntity<ComplainResponseDto> createComplain(@RequestBody ComplainRequestDto complainRequestDto){
+    public ResponseEntity<ComplainResponseDto> createComplain(@ModelAttribute  ComplainRequestDto complainRequestDto){
         return new ResponseEntity<>(complainService.createComplain(complainRequestDto), HttpStatus.CREATED);
     }
 
@@ -54,9 +59,10 @@ public class ComplainController {
 
 
 
-    @GetMapping("/pincode/{pincodeAreaId}")
-    public ResponseEntity<List<ComplainResponseDto>> getComplainByPincodeAreaId(   @PathVariable Long pincodeAreaId) {
-        return ResponseEntity.ok(complainService.getComplainByPinCodeAreaId(pincodeAreaId));
+    @GetMapping("/pincode/{pinCode}")
+    public ResponseEntity<List<ComplainResponseDto>> getComplainByPincodeAreaId(
+            @PathVariable String pinCode) {
+        return ResponseEntity.ok(complainService.getComplainByPinCode(pinCode));
     }
 
 

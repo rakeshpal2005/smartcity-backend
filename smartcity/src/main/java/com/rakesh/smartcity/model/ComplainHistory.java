@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Complainhistory {
+public class ComplainHistory {
 
 @Id
 @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,6 +23,8 @@ public class Complainhistory {
     @Column(nullable = false)
     private ComplainStatus complainStatus;
 
+
+    @Column(nullable = false)
     private  String note;
 
     @Column(nullable = false)

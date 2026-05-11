@@ -1,8 +1,14 @@
 package com.rakesh.smartcity.Dto;
 
 import com.rakesh.smartcity.model.ImageType;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-public class ComplainImageRequestDto {
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+  public class ComplainImageRequestDto {
     Long complaintId;
     private ImageType imageType;
 }

@@ -1,9 +1,7 @@
 package com.rakesh.smartcity.Dto;
 
 import com.rakesh.smartcity.model.Role;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 
 @Data
@@ -15,4 +13,7 @@ public class LoginResponseDto {
     private String name;
     private String email;
     private Role role;
+    private String phoneNumber;
+    private String pinCode;
+
 }

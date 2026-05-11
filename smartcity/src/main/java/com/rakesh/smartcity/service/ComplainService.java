@@ -1,12 +1,14 @@
 package com.rakesh.smartcity.service;
 
 import com.rakesh.smartcity.Dto.*;
+import com.rakesh.smartcity.Exception.BadRequestException;
+import com.rakesh.smartcity.Exception.ResourceNotFoundException;
 import com.rakesh.smartcity.model.*;
 import com.rakesh.smartcity.repo.ComplainRepo;
-import com.rakesh.smartcity.repo.PincodeAreaRepo;
 import com.rakesh.smartcity.repo.UserRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -17,203 +19,256 @@ import java.util.stream.Collectors;
 public class ComplainService {
 
     @Autowired
-   private ComplainRepo complainRepo;
+    private ComplainRepo complainRepo;
 
     @Autowired
     private UserRepo userRepo;
 
+
     @Autowired
-    PincodeAreaRepo pincodeAreaRepo;
+    ComplainImageService complainImageService;
+    @Autowired
+    private ComplainHistoryService complainHistoryService;
 
-    public ComplainResponseDto createComplain(ComplainRequestDto complainRequestDto){
+    @Transactional
+    public ComplainResponseDto createComplain(ComplainRequestDto complainRequestDto) {
 
-       User user = userRepo.findById(complainRequestDto.getUserId())        // not use//
-               .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userRepo.findById(complainRequestDto.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-          Complain complain=mapToEntity(complainRequestDto);
-          complain.setUser(user);
-        complain.setStatus(ComplainStatus.SUBMITTED);
-        complain.setCreatedAt(LocalDateTime.now());
-          Complain saveComplain=complainRepo.save(complain);
-          return mapToDto(saveComplain);
+        User admin = userRepo.findByRoleAndPinCode(
+                        Role.ADMIN,
+                        complainRequestDto.getPinCode())
+                .stream()
+                .findFirst()
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "No admin available for this pinCode"));
+
+        Complain complain = mapToEntity(complainRequestDto);
+        complain.setUser(user);
+        complain.setAssignedAdmin(admin);
+
+        Complain saveComplain = complainRepo.save(complain);
+
+        if (complainRequestDto.getImage() != null &&
+                !complainRequestDto.getImage().isEmpty()) {
+
+            complainImageService.uploadImage(
+                    saveComplain.getId(),
+                    ImageType.BEFORE,
+                    complainRequestDto.getImage());
+        }
+
+        complainHistoryService.createHistory(
+                saveComplain,
+                "Complaint submitted",
+                user,
+                ComplainStatus.SUBMITTED
+        );
+
+        complainRepo.flush();
+
+        Complain freshComplain = complainRepo.findById(saveComplain.getId())
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Complaint not found"));
+
+        return mapToDto(freshComplain);
     }
 
+    public ComplainResponseDto getComplainById(Long id) {
+        Complain complain = complainRepo.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Complaint not found"));
+        return mapToDto(complain);
+    }
 
-    public ComplainResponseDto getComplainById(Long id){
-    Complain complain = complainRepo.findById(id)
-          .orElseThrow(() -> new RuntimeException("Complain not Found"));
-     return mapToDto(complain);
-}
-
-
-public List<ComplainResponseDto> getComplainByUserId(Long UserId){
-
-        User user = userRepo.findById(UserId)
-                .orElseThrow(() -> new RuntimeException("user not found"));
-
-         List<Complain> complains= complainRepo.findByUserId(user.getId());
-    return complains.stream()
-            .map(this::mapToDto)
-            .collect(Collectors.toList());
-}
-
-public List<ComplainResponseDto>getComplainByAdminId(Long AdminId){
-        List<Complain> complains = complainRepo.findByAssignedAdminId(AdminId);
-    return complains.stream()
-            .map(this::mapToDto)
-            .collect(Collectors.toList());
-
-}
-
-    public List<ComplainResponseDto>getComplainByWorkerId(Long WorkerId) {
-        List<Complain> complains = complainRepo.findByAssignedWorkerId(WorkerId);
+    public List<ComplainResponseDto> getComplainByUserId(Long userId) {
+        User user = userRepo.findById(userId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found"));
+        List<Complain> complains = complainRepo.findByUserId(user.getId());
         return complains.stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
-
     }
 
-    public List<ComplainResponseDto> getComplainByPinCodeAreaId(Long PinCodeAreaId){
-        List<Complain> complains = complainRepo.findByPinCodeAreaId(PinCodeAreaId);
+    public List<ComplainResponseDto> getComplainByAdminId(Long adminId) {
+        List<Complain> complains = complainRepo.findByAssignedAdminId(adminId);
         return complains.stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
     }
 
+    public List<ComplainResponseDto> getComplainByWorkerId(Long workerId) {
+        List<Complain> complains = complainRepo.findByAssignedWorkerId(workerId);
+        return complains.stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
 
+    public List<ComplainResponseDto> getComplainByPinCode(String pinCode) {
+        List<Complain> complains = complainRepo.findByPinCode(pinCode);
+        return complains.stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
 
-    public ComplainResponseDto assignWorkerToComplain(Long ComplainId , Long WorkerId){
+    public ComplainResponseDto assignWorkerToComplain(
+            Long complainId,
+            Long workerId) {
 
-          Complain complain = complainRepo.findById(ComplainId)
-                  .orElseThrow(() -> new RuntimeException("Complain Not Found..."));
+        Complain complain = complainRepo.findById(complainId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Complaint not found"));
 
-          User user = userRepo.findById(WorkerId)
-                  .orElseThrow(() -> new RuntimeException("User Not found "));
+        User user = userRepo.findById(workerId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found"));
 
         if (complain.getStatus() == ComplainStatus.ASSIGNED) {
-            throw new RuntimeException("Worker Already Assigned");
+            throw new BadRequestException("Worker already assigned");
         }
 
-          if(user.getRole()==Role.WORKER){
+        if (complain.getStatus() == ComplainStatus.RESOLVED ||
+                complain.getStatus() == ComplainStatus.REJECTED) {
+            throw new BadRequestException(
+                    "Cannot assign worker to completed complaint");
+        }
 
-              complain.setAssignedWorker(user);
-          }
-          else{
-              throw new RuntimeException("this is not a worker");
-          }
+        if (user.getRole() != Role.WORKER) {
+            throw new BadRequestException("User is not a worker");
+        }
+
+        if (!user.getPinCode().equals(complain.getPinCode())) {
+            throw new BadRequestException(
+                    "Worker pincode does not match complaint pincode");
+        }
+
         if (user.getAdmin() == null) {
-            throw new RuntimeException("Worker has no admin assigned");
+            throw new BadRequestException("Worker has no admin assigned");
         }
+
+        complain.setAssignedWorker(user);
         complain.setAssignedAdmin(user.getAdmin());
+        Complain saveComplain = complainRepo.save(complain);
 
-          complain.setStatus(ComplainStatus.ASSIGNED);
-          complain.setUpdatedAt(LocalDateTime.now());
-          Complain saveComplain = complainRepo.save(complain);
-          return mapToDto(saveComplain);
+
+        complainHistoryService.createHistory(
+                saveComplain,
+                "Worker " + user.getName() + " assigned",
+                user.getAdmin(),
+                ComplainStatus.ASSIGNED
+        );
+
+        return mapToDto(saveComplain);
     }
 
+    public ComplainResponseDto updateComplainStatus(
+            Long id,
+            ComplainStatusUpdateDto complainStatusUpdateDto) {
 
-    public ComplainResponseDto updateComplainStatus(Long id , ComplainStatusUpdateDto complainStatusUpdateDto){
-   Complain complain = complainRepo.findById(id)
-           .orElseThrow(() -> new RuntimeException("Complain not found with this id "+id));
+        Complain complain = complainRepo.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Complaint not found with id " + id));
 
-      complain.setStatus(complainStatusUpdateDto.getStatus());
-        complain.setUpdatedAt(LocalDateTime.now());
+        complain.setStatus(complainStatusUpdateDto.getStatus());
 
-        Complain updatedcomplain = complainRepo.save(complain);
-    return mapToDto(updatedcomplain);
+        if (complainStatusUpdateDto.getStatus() == ComplainStatus.RESOLVED) {
+            complain.setResolvedAt(LocalDateTime.now());
+        }
+
+        Complain updatedComplain = complainRepo.save(complain);
+
+
+        User changedBy;
+        if (complainStatusUpdateDto.getStatus() == ComplainStatus.IN_PROGRESS ||
+                complainStatusUpdateDto.getStatus() == ComplainStatus.RESOLVED) {
+
+            changedBy = updatedComplain.getAssignedWorker() != null
+                    ? updatedComplain.getAssignedWorker()
+                    : updatedComplain.getAssignedAdmin();
+        } else {
+
+            changedBy = updatedComplain.getAssignedAdmin();
+        }
+
+        if (changedBy != null) {
+            complainHistoryService.createHistory(
+                    updatedComplain,
+                    complainStatusUpdateDto.getNote(),
+                    changedBy,
+                    complainStatusUpdateDto.getStatus()
+            );
+        }
+
+        return mapToDto(updatedComplain);
     }
 
-
+    public List<ComplainResponseDto> getAllComplains() {
+        return complainRepo.findAll()
+                .stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
 
     private ComplainResponseDto mapToDto(Complain complain) {
-
         ComplainResponseDto complainResponseDto = new ComplainResponseDto();
-
         complainResponseDto.setId(complain.getId());
         complainResponseDto.setDescription(complain.getDescription());
         complainResponseDto.setTitle(complain.getTitle());
         complainResponseDto.setCategory(complain.getCategory());
         complainResponseDto.setStatus(complain.getStatus());
         complainResponseDto.setExactAddress(complain.getExactAddress());
+        complainResponseDto.setLandMark(complain.getLandmark());
+        complainResponseDto.setPinCode(complain.getPinCode());
+        complainResponseDto.setAreaName(complain.getAreaName());
         complainResponseDto.setCreatedAt(complain.getCreatedAt());
         complainResponseDto.setUpdatedAt(complain.getUpdatedAt());
         complainResponseDto.setResolvedAt(complain.getResolvedAt());
-        complainResponseDto.setPinCodeArea(mapPinCodeAreaToDto(complain.getPinCodeArea()));
-
-        if (complain.getUser() != null) {
+        if (complain.getUser() != null)
             complainResponseDto.setUser(mapUserToDto(complain.getUser()));
-        }
-
-        if (complain.getAssignedAdmin() != null) {
+        if (complain.getAssignedAdmin() != null)
             complainResponseDto.setAssignedAdmin(mapUserToDto(complain.getAssignedAdmin()));
-        }
-
-        if (complain.getAssignedWorker() != null) {
+        if (complain.getAssignedWorker() != null)
             complainResponseDto.setAssignedWorker(mapUserToDto(complain.getAssignedWorker()));
-        }
-
-        if (complain.getComplainImages() != null) {
+        if (complain.getComplainImages() != null)
             complainResponseDto.setComplaintImages(
                     complain.getComplainImages().stream()
                             .map(this::mapImageToDto)
-                            .collect(Collectors.toList())
-            );
-        }
-
+                            .collect(Collectors.toList()));
         return complainResponseDto;
     }
 
-    private  Complain mapToEntity(ComplainRequestDto complainRequestDto) {
-
+    private Complain mapToEntity(ComplainRequestDto complainRequestDto) {
         Complain complain = new Complain();
-         complain.setTitle(complainRequestDto.getTitle());
-         complain.setDescription(complainRequestDto.getDescription());
+        complain.setTitle(complainRequestDto.getTitle());
+        complain.setDescription(complainRequestDto.getDescription());
         complain.setCategory(complainRequestDto.getCategory());
         complain.setExactAddress(complainRequestDto.getExactAddress());
-
-        PinCodeArea pinCodeArea = pincodeAreaRepo.findById(complainRequestDto.getPinCodeAreaId())
-                .orElseThrow(() -> new RuntimeException("PinCodeArea not found"));
-
-        complain.setPinCodeArea(pinCodeArea);
-
+        complain.setLandmark(complainRequestDto.getLandMark());
+        complain.setPinCode(complainRequestDto.getPinCode());
+        complain.setAreaName(complainRequestDto.getAreaName());
         return complain;
-    }
-
-
-
-    private PincodeAreaDto mapPinCodeAreaToDto(PinCodeArea pinCodeArea) {     // use in mapToDto method
-
-        PincodeAreaDto dto = new PincodeAreaDto();
-
-        dto.setId(pinCodeArea.getId());
-        dto.setPinCode(pinCodeArea.getPincode());
-        dto.setCity(pinCodeArea.getCity());
-        dto.setState(pinCodeArea.getState());
-        dto.setAreaName(pinCodeArea.getAreaname());
-        return dto;
     }
 
     private UserDto mapUserToDto(User user) {
         UserDto userDto = new UserDto();
-
         userDto.setId(user.getId());
         userDto.setName(user.getName());
         userDto.setEmail(user.getEmail());
         userDto.setPhoneNumber(user.getPhoneNumber());
         userDto.setPinCode(user.getPinCode());
         userDto.setRole(user.getRole());
-
         return userDto;
     }
 
     private ComplainImageResponseDto mapImageToDto(ComplainImage complainImage) {
         ComplainImageResponseDto dto = new ComplainImageResponseDto();
-
         dto.setId(complainImage.getId());
         dto.setImageUrl(complainImage.getImageUrl());
         dto.setImageType(complainImage.getImageType());
-
         return dto;
     }
 }

@@ -1,10 +1,9 @@
 package com.rakesh.smartcity.model;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.List;
 
@@ -36,15 +35,21 @@ private List<Complain> complains;
     private Role role;
 
     @Column(nullable = false)
+    @JsonIgnore
     private String password;
 
     @Column(nullable = false)
     private String pinCode;
-
     @ManyToOne
     @JoinColumn(name = "admin_id")
+    @JsonIgnore
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private User admin;
 
     @OneToMany(mappedBy = "admin")
+    @JsonIgnore
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private List<User> workers;
 }

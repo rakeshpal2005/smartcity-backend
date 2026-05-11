@@ -39,6 +39,12 @@ public class Complain {
     private String landmark;
 
     @Column(nullable = false)
+    private String pinCode;
+
+    private String areaName;
+
+
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
@@ -57,10 +63,26 @@ public class Complain {
     @JoinColumn(name = "assigned_worker_id")
     private User assignedWorker;
 
-    @ManyToOne
-    @JoinColumn(name = "pin_code_area_id", nullable = false)
-    private PinCodeArea pinCodeArea;
-
-    @OneToMany(mappedBy = "complain", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "complain", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<ComplainImage> complainImages;
+
+
+
+    @PrePersist
+    public void prePersist() {
+
+        this.createdAt = LocalDateTime.now();
+
+
+        if (this.status == null) {
+            this.status = ComplainStatus.SUBMITTED;
+        }
+    }
+
+
+    // Automatically runs before update
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 }

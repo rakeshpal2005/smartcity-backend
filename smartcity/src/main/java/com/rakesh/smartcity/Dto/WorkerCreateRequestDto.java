@@ -13,6 +13,5 @@ public class WorkerCreateRequestDto {
     private String email;
     private String password;
     private String phoneNumber;
-    private String pinCode;
     private Long adminId;
 }

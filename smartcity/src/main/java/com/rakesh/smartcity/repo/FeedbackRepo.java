@@ -10,8 +10,8 @@ import java.util.Optional;
 
 @Repository
 public interface  FeedbackRepo extends JpaRepository<Feedback, Long> {
-    List<Feedback> findByWorkerId(Long workerId);
+    List<Feedback> findByGivenToId(Long workerId);
 
-    Optional<Feedback> findByComplaintId(Long complaintId);
+    Optional<Feedback> findByComplainId(Long complaintId);
 
 }

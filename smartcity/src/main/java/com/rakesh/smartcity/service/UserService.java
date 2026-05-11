@@ -1,6 +1,7 @@
 package com.rakesh.smartcity.service;
 
 import com.rakesh.smartcity.Dto.UserDto;
+import com.rakesh.smartcity.Exception.ResourceNotFoundException;
 import com.rakesh.smartcity.model.Role;
 import com.rakesh.smartcity.model.User;
 import com.rakesh.smartcity.repo.UserRepo;
@@ -20,7 +21,8 @@ public class UserService {
 
     public UserDto getUserById(Long id){
         User user = userRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("not found with this id "));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "User not found with id: " + id));
         return mapToDto(user);
     }
 

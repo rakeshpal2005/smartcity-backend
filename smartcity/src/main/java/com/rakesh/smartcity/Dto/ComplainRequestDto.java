@@ -15,7 +15,9 @@ public class ComplainRequestDto {
     private String description;
     private Category category;
     private String exactAddress;
-    private Long pinCodeAreaId;
+    private String pinCode;
+    private String areaName;
     private MultipartFile image;
+    private String landMark;
     private Long UserId;
 }
