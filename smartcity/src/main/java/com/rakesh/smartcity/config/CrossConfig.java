@@ -15,7 +15,8 @@ public class CrossConfig {
     @Bean
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
-        config.addAllowedOrigin("http://localhost:5173");  // my React app
+        config.addAllowedOrigin("http://localhost:5173");
+        config.addAllowedOrigin("https://my-frontend-url.vercel.app");
         config.addAllowedMethod("*");
         config.addAllowedHeader("*");
         config.setAllowCredentials(true);
